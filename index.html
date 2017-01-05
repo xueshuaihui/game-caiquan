@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>猜拳</title>
+    <link rel="stylesheet" href="css/base.css">
+    <script src="js/lufylegend-1.10.1.min.js"></script>
+</head>
+<body scroll="not">
+<div id="mydiv"></div>
+</body >
+<script>
+    var width=document.documentElement.clientWidth;
+    var height=document.documentElement.clientHeight;
+//    alert(width+"+"+height)
+    init(100,"mydiv",width,height,main);
+    var remwidth,remheight;/*默认单位*/
+    var caiquannum=0;/*猜拳次数*/
+    var huoshengnum=0;/*获胜次数*/
+    var shibainum=0;/*失败次数*/
+    var pingjunum=0;/*平局次数*/
+    var loading,
+         gamelayer,/*游戏图层*/
+         informationlayer,/*信息图层*/
+         resultlayer,/*结果展示图层*/
+         choicelayer,/*选择区域图层*/
+         relayer,/*结果显示的图层*/
+         bglayer;/*舞台的图层*/
+    var imglis=new Array(
+            {name:"title",path:"images/title.png"},
+            {name:"shitou",path:"images/shitou.png"},
+            {name:"jiandao",path:"images/jiandao.png"},
+            {name:"bu",path:"images/bu.png"}
+    );
+    function main(){
+        /*创建游戏页面图层*/
+        gamelayer=new LSprite();
+        addChild(gamelayer);
+        /*创建进度条*/
+        loading=new LoadingSample3();
+        gamelayer.addChild(loading);
+        /*页面加载*/
+        LLoadManage.load(imglis,function(progress){
+            /*以图片张数为依据  更新页面加载进度*/
+            loading.setProgress(progress);
+        },function(){
+            /*页面加载完成*/
+            gamelayer.removeChild(loading);
+            loading=null;
+            /*页面加载完成，进行游戏初始化*/
+            gameinit();
+        })
+    }
+    function gameinit(){
+        remwidth=width/20;
+        remheight=height/20;
+        /*画 游戏区域  整屏 黑色*/
+        gamelayer.graphics.drawRect(0,"black",[0,0,width,height],true,"#460810");
+        /*创建信息图层*/
+        informationlayer=new LSprite();
+        gamelayer.addChild(informationlayer);
+        informationlayer.graphics.drawRect(0,"white",[0,remheight*7,remwidth*2,remheight*5],true,"white");
+        informationinit(0,remheight*7);/*展示信息初始化*/
+        /*创建游戏结果展示区域的图层*/
+        resultlayer=new LSprite();
+        gamelayer.addChild(resultlayer);
+        resultlayer.graphics.drawRect(0,"white",[remwidth*5,remheight*2,remwidth*10,remheight*10],false,"#eee");
+        /*添加背景*/
+        bglayer=new LSprite();
+        resultlayer.addChild(bglayer);
+        picture("images/wutai.png",remwidth*5,remheight*2,remwidth*10,bglayer);/*背景舞台*/
+        resultinit(remwidth*5,remheight*2);/*游戏初始化*/
+        /*创建用户选择区域的图层*/
+        choicelayer=new LSprite();
+        gamelayer.addChild(choicelayer);
+        choicelayer.graphics.drawRect(1,"white",[remwidth*5,remheight*14,remwidth*10,remheight*5],true,"white")
+        choiceinit(remwidth*5,remheight*14);/*用户选择初始化*/
+    }
+    /*信息初始化*/
+    function informationinit(x,y){
+        var x=x;/*区域坐标*/
+        var y=y;/*区域坐标*/
+        /*猜拳次数*/
+        title(x,y,remwidth/10,remheight,"猜拳次数："+caiquannum,remwidth/7,"black","none",informationlayer);
+        /*获胜次数*/
+        title(x,y,remwidth/10,remheight*2,"获胜次数："+huoshengnum,remwidth/7,"black","none",informationlayer);
+        /*失败结果*/
+        title(x,y,remwidth/10,remheight*3,"失败结果："+shibainum,remwidth/7,"black","none",informationlayer);
+        /*平局次数*/
+        title(x,y,remwidth/10,remheight*4,"平局次数："+pingjunum,remwidth/7,"black","none",informationlayer);
+    }
+    /*游戏显示初始化*/
+    function resultinit(x,y){
+        var x=x;/*区域坐标*/
+        var y=y;/*区域坐标*/
+        /*显示标题*/
+//        picture("images/title.png",x+remwidth,y-remheight*2,remwidth*8,resultlayer);
+        /*对战区域*/
+        result();
+    }
+    function result(){
+        relayer=new LSprite();
+        resultlayer.addChild(relayer);
+        /*玩家*/
+        relayer.graphics.drawRect(0,"#eee",[remwidth*7.5,remheight*5,remwidth*2,remheight*5],false,"white");/*玩家区域*/
+        title(remwidth*8,remheight*5,0,0,"玩   家",remwidth/3,"black","bolder",relayer);/*title*/
+        picture("images/shitou.png",remwidth*7.75,remheight*6.5,remwidth*1.5,relayer);/*玩家结果显示*/
+        /*VS*/
+        picture("images/vs.png",remwidth*9.5,remheight*7,remwidth,relayer);/*玩家结果显示*/
+        /*电脑*/
+        relayer.graphics.drawRect(0,"#eee",[remwidth*10.5,remheight*5,remwidth*2,remheight*5],false,"white");/*电脑区域*/
+        title(remwidth*11,remheight*5,0,0,"电   脑",remwidth/3,"black","bolder",relayer);/*title*/
+        picture("images/shitou.png",remwidth*10.75,remheight*6.5,remwidth*1.5,relayer);/*电脑结果显示*/
+    }
+    /*用户选择初始化*/
+    function choiceinit(x,y){
+        var x=x;/*区域坐标*/
+        var y=y;/*区域坐标*/
+        var width=remwidth*10/5;
+        title(x,y,remwidth/5,remheight/5,"玩家选择猜拳",remheight/2,"black","bolder",choicelayer);
+//        for(var i=0;i<imglis.length-1;i++){
+//            var layer=imglis[i+1].name=new LSprite();
+//            choicelayer.addChild(imglis[i+1].name);
+//            picture(imglis[i+1].path,x+width*(i+0.5)*1.5,y+remheight/1.5,width,layer);
+//            layer.addEventListener(LMouseEvent.MOUSE_DOWN,function mousedown(){
+//                picture(imglis[i+1][path],remwidth*7.75,remheight*6.5,remwidth*1.5,relayer);/*玩家结果显示*/
+//            });
+//        }
+        /*石头*/
+        shitoulayer=new LSprite();
+        choicelayer.addChild(shitoulayer);
+        picture(imglis[1].path,x+width*0.5*1.5,y+remheight/1.5,width,shitoulayer);
+        shitoulayer.addEventListener(LMouseEvent.MOUSE_DOWN,function mousedown(){
+        picture(imglis[1].path,remwidth*7.75,remheight*6.5,remwidth*1.5,relayer);/*玩家结果显示*/
+            /*用户选择之后电脑随机出拳*/
+//            computer();
+            compare(1,computer())
+        });
+        /*剪刀*/
+        jiandaolayer=new LSprite();
+        choicelayer.addChild(jiandaolayer);
+        picture(imglis[2].path,x+width*1.5*1.5,y+remheight/1.5,width,jiandaolayer);
+        jiandaolayer.addEventListener(LMouseEvent.MOUSE_DOWN,function mousedown(){
+            picture(imglis[2].path,remwidth*7.75,remheight*6.5,remwidth*1.5,relayer);/*玩家结果显示*/
+            /*用户选择之后电脑随机出拳*/
+//            computer();
+            compare(2,computer())
+        });
+        /*布*/
+        bulayer=new LSprite();
+        choicelayer.addChild(bulayer);
+        picture(imglis[3].path,x+width*2.5*1.5,y+remheight/1.5,width,bulayer);
+        bulayer.addEventListener(LMouseEvent.MOUSE_DOWN,function mousedown(){
+            picture(imglis[3].path,remwidth*7.75,remheight*6.5,remwidth*1.5,relayer);/*玩家结果显示*/
+            /*用户选择之后电脑随机出拳*/
+//            computer();
+            compare(3,computer())
+        });
+
+    }
+    /*电脑随机出拳*/
+    function computer(){
+        /*产生随机数*/
+        var random=Math.floor(Math.random()*3);
+        var num;
+        switch(random){
+            case 0:conp(0);break;
+            case 1:conp(1);break;
+            case 2:conp(2);break;
+        }
+        function conp(i){
+            picture(imglis[i+1].path,remwidth*10.75,remheight*6.5,remwidth*1.5,relayer);/*电脑结果显示*/
+            num=i;
+        }
+        return num+1;
+    }
+    /*结果比较*/
+    function compare(wanjia,diannao){
+        var a=wanjia;
+        var b=diannao;
+        informationlayer.childList[0].text="猜拳次数："+(caiquannum=caiquannum+1);
+        switch(a-b){
+            case -2: shibainum++;informationlayer.childList[2].text="失败次数："+shibainum;break;
+            case -1: huoshengnum++;informationlayer.childList[1].text="获胜次数："+huoshengnum;break;
+            case 0: pingjunum++;informationlayer.childList[3].text="平局次数："+pingjunum;break;
+            case 1: shibainum++;informationlayer.childList[2].text="失败次数："+shibainum;break;
+            case 2: huoshengnum++;informationlayer.childList[1].text="获胜次数："+huoshengnum;break;
+        };
+    }
+    /*文字处理*/
+    function title(x,y,left,top,text,size,color,weight,parents){
+        /*left 相对与区域的X轴坐标
+         top 相对用途区域的Y轴坐标
+         text 显示的文字
+         size  文字的大小
+         color  文字的颜色
+         weight 文字加粗*/
+        var field=new LTextField();
+        field.x=x+left;
+        field.y=y+top;
+        field.text=text;
+        field.size=size;
+        field.color=color;
+        field.weight=weight;
+        parents.addChild(field);
+    }
+    /*图片*/
+    function picture(URL,x,y,Width,parents){
+        var loader=new LLoader();
+        loader.addEventListener(LEvent.COMPLETE,loadbitmapdata);
+        loader.load(URL,"bitmapData");
+        function loadbitmapdata(){
+            var bitmapdata=new LBitmapData(loader.content);
+            var bitmap=new LBitmap(bitmapdata);
+            bitmap.x=x;
+            bitmap.y=y;
+            bitmap.scaleX=Width/bitmapdata.width;
+            bitmap.scaleY=Width/bitmapdata.width;
+            parents.addChild(bitmap);
+        }
+    }
+</script>
+</html>
